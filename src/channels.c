@@ -1602,6 +1602,27 @@ error:
 }
 
 /**
+ * @brief Send a custom request to a channel.
+ *
+ * @param[in] channel   The channel to send the request.
+ *
+ * @param[in] request   The request name.
+ *
+ * @param[in] buffer    The request payload.
+ *
+ * @param[in] reply     Whether to expect a reply: 0 for no, 1 for yes.
+ *
+ * @return              SSH_OK on success,
+ *                      SSH_ERROR if an error occured,
+ *                      SSH_AGAIN if in nonblocking mode and call has
+ *                      to be done again.
+ */
+int ssh_channel_request_custom(ssh_channel channel, const char *request,
+    ssh_buffer buffer, int reply) {
+  return channel_request(channel, request, buffer, reply);
+}
+
+/**
  * @brief Request a pty with a specific type and size.
  *
  * @param[in]  channel  The channel to sent the request.

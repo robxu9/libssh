@@ -390,6 +390,7 @@ LIBSSH_API int ssh_channel_read(ssh_channel channel, void *dest, uint32_t count,
 LIBSSH_API int ssh_channel_read_timeout(ssh_channel channel, void *dest, uint32_t count, int is_stderr, int timeout_ms);
 LIBSSH_API int ssh_channel_read_nonblocking(ssh_channel channel, void *dest, uint32_t count,
     int is_stderr);
+LIBSSH_API int ssh_channel_request_custom(ssh_channel channel, const char *request, ssh_buffer buffer, int reply);
 LIBSSH_API int ssh_channel_request_env(ssh_channel channel, const char *name, const char *value);
 LIBSSH_API int ssh_channel_request_exec(ssh_channel channel, const char *cmd);
 LIBSSH_API int ssh_channel_request_pty(ssh_channel channel);
