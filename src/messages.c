@@ -250,6 +250,19 @@ static int ssh_execute_server_request(ssh_session session, ssh_message msg)
                 }
 
                 return SSH_OK;
+            } else if (msg->channel_request.type == SSH_CHANNEL_REQUEST_UNKNOWN &&
+                       ssh_callbacks_exists(channel->callbacks, channel_unknown_request_function)) {
+                rc = channel->callbacks->channel_unknown_request_function(session,
+                                                                          channel,
+                                                                          msg->channel_request.packet, msg->channel_request.request,
+                                                                          channel->callbacks->userdata);
+                if (rc == 0) {
+                    ssh_message_channel_request_reply_success(msg);
+                } else {
+                    ssh_message_reply_default(msg);
+                }
+
+                return SSH_OK;
             }
             break;
         case SSH_REQUEST_SERVICE:
@@ -524,6 +537,7 @@ void ssh_message_free(ssh_message msg){
       SAFE_FREE(msg->channel_request.var_value);
       SAFE_FREE(msg->channel_request.command);
       SAFE_FREE(msg->channel_request.subsystem);
+      ssh_buffer_free(msg->channel_request.packet);
       break;
     case SSH_REQUEST_SERVICE:
       SAFE_FREE(msg->service_request.service);
@@ -999,7 +1013,7 @@ SSH_PACKET_CALLBACK(ssh_packet_channel_open){
     ssh_set_error(session,SSH_FATAL, "Invalid state when receiving channel open request (must be authenticated)");
     goto error;
   }
-  
+
   if (strcmp(type_c,"session") == 0) {
     msg->channel_request_open.type = SSH_CHANNEL_SESSION;
     SAFE_FREE(type_c);
@@ -1247,6 +1261,8 @@ int ssh_message_handle_channel_request(ssh_session session, ssh_channel channel,
   }
 
   msg->channel_request.type = SSH_CHANNEL_REQUEST_UNKNOWN;
+  msg->channel_request.request = request;
+  msg->channel_request.packet = packet;
 end:
   ssh_message_queue(session,msg);
 

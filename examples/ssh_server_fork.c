@@ -419,6 +419,12 @@ static int subsystem_request(ssh_session session, ssh_channel channel,
     return SSH_ERROR;
 }
 
+static int unknown_request(ssh_session session, ssh_channel channel,
+                           ssh_buffer packet, const char *request, void *userdata) {
+    /* do nothing by default */
+    return SSH_OK;
+}
+
 static int auth_password(ssh_session session, const char *user,
                          const char *pass, void *userdata) {
     struct session_data_struct *sdata = (struct session_data_struct *) userdata;
@@ -508,7 +514,8 @@ static void handle_session(ssh_event event, ssh_session session) {
         .channel_shell_request_function = shell_request,
         .channel_exec_request_function = exec_request,
         .channel_data_function = data_function,
-        .channel_subsystem_request_function = subsystem_request
+        .channel_subsystem_request_function = subsystem_request,
+        .channel_unknown_request_function = unknown_request
     };
 
     struct ssh_server_callbacks_struct server_cb = {

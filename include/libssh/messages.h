@@ -79,6 +79,10 @@ struct ssh_channel_request {
     const char *x11_auth_protocol;
     const char *x11_auth_cookie;
     uint32_t x11_screen_number;
+
+    /* unknown - save request info */
+    ssh_buffer packet; // payload
+    const char *request; // name
 };
 
 struct ssh_message_struct {

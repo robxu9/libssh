@@ -679,6 +679,20 @@ typedef int (*ssh_channel_subsystem_request_callback) (ssh_session session,
                                             const char *subsystem,
                                             void *userdata);
 
+/**
+ * @brief SSH channel unknown request from a client.
+ * @param channel the channel
+ * @param packet the payload included
+ * @param request the request type
+ * @param userdata Userdata to be passed to the callback function.
+ * @returns 0 if the unknown request is accepted
+ * @returns 1 if the request is denied
+ */
+typedef int (*ssh_channel_unknown_request_callback) (ssh_session session,
+                                            ssh_channel channel,
+                                            ssh_buffer packet,
+                                            const char *request,
+                                            void *userdata);
 
 struct ssh_channel_callbacks_struct {
   /** DON'T SET THIS use ssh_callbacks_init() instead. */
@@ -743,6 +757,10 @@ struct ssh_channel_callbacks_struct {
    * (like sftp).
    */
   ssh_channel_subsystem_request_callback channel_subsystem_request_function;
+  /** This function will be called when a client requests
+   * something unknown.
+   */
+  ssh_channel_unknown_request_callback channel_unknown_request_function;
 };
 
 typedef struct ssh_channel_callbacks_struct *ssh_channel_callbacks;
