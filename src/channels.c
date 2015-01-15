@@ -778,7 +778,7 @@ SSH_PACKET_CALLBACK(channel_rcv_request) {
 #else
     SSH_LOG(SSH_LOG_WARNING, "Unhandled channel request %s", request);
 #endif
-	
+
 	SAFE_FREE(request);
 
 	return SSH_PACKET_USED;
@@ -2164,6 +2164,29 @@ error:
 }
 
 /**
+*
+* @brief Send a custom global request and wait for the
+* result.
+*
+* @param[in]  session  The SSH session handle.
+*
+* @param[in]  request  The type of request (defined in RFC).
+*
+* @param[in]  buffer   Additional data to put in packet.
+*
+* @param[in]  reply    Set if you expect a reply from server.
+*
+* @return              SSH_OK on success,
+*                      SSH_ERROR if an error occurred,
+*                      SSH_AGAIN if in nonblocking mode and call has
+*                      to be done again.
+*/
+int ssh_global_request_custom(ssh_session session, const char *request,
+    ssh_buffer buffer, int reply) {
+  return global_request(session, request, buffer, reply);
+}
+
+/**
  * @brief Sends the "tcpip-forward" global request to ask the server to begin
  *        listening for inbound connections.
  *
@@ -3281,7 +3304,7 @@ error:
  *          forward the content of a socket to the channel. You still have to
  *          use channel_read and channel_write for this.
  */
-int ssh_channel_open_x11(ssh_channel channel, 
+int ssh_channel_open_x11(ssh_channel channel,
         const char *orig_addr, int orig_port) {
   ssh_session session;
   ssh_buffer payload = NULL;
