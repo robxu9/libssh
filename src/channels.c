@@ -317,6 +317,38 @@ end:
   return err;
 }
 
+/**
+ * @brief Open a custom channel type.
+ *
+ * @param[in]  channel  An allocated channel.
+ * @param[in]  type     The type of channel to open.
+ * @param[in]  payload  Optional payload to send.
+ *
+ * @return              SSH_OK on success,
+ *                      SSH_ERROR if an error occurred,
+ *                      SSH_AGAIN if in nonblocking mode and call has
+ *                      to be done again.
+ *
+ */
+int ssh_channel_open_custom(ssh_channel channel, const char* type, ssh_buffer payload) {
+  if(channel == NULL) {
+      return SSH_ERROR;
+  }
+
+#ifdef WITH_SSH1
+  if (channel->session->version == 1) {
+    return channel_open_session1(channel);
+  }
+#endif
+
+  return channel_open(channel,
+                      type,
+                      CHANNEL_INITIAL_WINDOW,
+                      CHANNEL_MAX_PACKET,
+                      payload);
+}
+
+
 /* return channel with corresponding local id, or NULL if not found */
 ssh_channel ssh_channel_from_local(ssh_session session, uint32_t id) {
   struct ssh_iterator *it;
