@@ -48,6 +48,9 @@ struct ssh_service_request {
 };
 
 struct ssh_global_request {
+    char* request;
+    ssh_buffer payload;
+
     int type;
     uint8_t want_reply;
     char *bind_address;

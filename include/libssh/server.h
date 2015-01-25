@@ -200,6 +200,21 @@ LIBSSH_API void ssh_set_auth_methods(ssh_session session, int auth_methods);
  **********************************************************/
 
 /**
+ * @brief Reply with a custom message.
+ *
+ * Use this function if you have a channel or global request and you want
+ * to send a custom request.
+ *
+ * @param[in] msg       The message to use for the reply.
+ * @param[in] ok        Whether to reply OK or NO (1 for okay, 0 for no)
+ * @param[in] payload   If a global request, sends the payload (or none if NULL)
+ * @param[in] len       If a payload is attached, the length of the payload
+ *
+ * @return              0 on success, -1 on error.
+ */
+LIBSSH_API int ssh_message_reply_custom(ssh_message msg, int ok, char* payload, size_t len);
+
+/**
  * @brief Reply with a standard reject message.
  *
  * Use this function if you don't know what to respond or if you want to reject
@@ -306,7 +321,7 @@ LIBSSH_API int ssh_message_global_request_port(ssh_message msg);
 
 LIBSSH_API int ssh_channel_open_reverse_forward(ssh_channel channel, const char *remotehost,
     int remoteport, const char *sourcehost, int localport);
-LIBSSH_API int ssh_channel_open_x11(ssh_channel channel, 
+LIBSSH_API int ssh_channel_open_x11(ssh_channel channel,
                                         const char *orig_addr, int orig_port);
 
 LIBSSH_API int ssh_channel_request_send_exit_status(ssh_channel channel,

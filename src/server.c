@@ -663,6 +663,37 @@ static int ssh_message_channel_request_open_reply_default(ssh_message msg) {
     return rc;
 }
 
+static int ssh_message_channel_request_reply_custom(ssh_message msg, int ok) {
+  uint32_t channel;
+  int rc;
+
+  if (msg->channel_request.want_reply) {
+    channel = msg->channel_request.channel->remote_channel;
+
+    int response = SSH2_MSG_CHANNEL_FAILURE;
+    if (ok)
+      response = SSH2_MSG_CHANNEL_SUCCESS;
+
+    SSH_LOG(SSH_LOG_PACKET,
+      "Sending a channel_request response to channel %d: %d", channel, response);
+
+    rc = ssh_buffer_pack(msg->session->out_buffer,
+                        "bd",
+                        response,
+                        channel);
+    if (rc != SSH_OK) {
+      ssh_set_error_oom(msg->session);
+      return SSH_ERROR;
+    }
+    return packet_send(msg->session);
+  }
+
+  SSH_LOG(SSH_LOG_PACKET,
+          "The client doesn't care about the response!");
+
+  return SSH_OK;
+}
+
 static int ssh_message_channel_request_reply_default(ssh_message msg) {
   uint32_t channel;
   int rc;
@@ -730,7 +761,7 @@ int ssh_message_global_request_reply_success(ssh_message msg, uint16_t bound_por
             goto error;
         }
 
-        if(msg->global_request.type == SSH_GLOBAL_REQUEST_TCPIP_FORWARD 
+        if(msg->global_request.type == SSH_GLOBAL_REQUEST_TCPIP_FORWARD
                                 && msg->global_request.bind_port == 0) {
             rc = ssh_buffer_pack(msg->session->out_buffer, "d", bound_port);
             if (rc != SSH_ERROR) {
@@ -742,11 +773,39 @@ int ssh_message_global_request_reply_success(ssh_message msg, uint16_t bound_por
         return packet_send(msg->session);
     }
 
-    if(msg->global_request.type == SSH_GLOBAL_REQUEST_TCPIP_FORWARD 
+    if(msg->global_request.type == SSH_GLOBAL_REQUEST_TCPIP_FORWARD
                                 && msg->global_request.bind_port == 0) {
         SSH_LOG(SSH_LOG_PACKET,
                 "The client doesn't want to know the remote port!");
     }
+
+    return SSH_OK;
+error:
+    return SSH_ERROR;
+}
+
+static int ssh_message_global_request_reply_custom(ssh_message msg, int ok, char* payload, size_t len) {
+    SSH_LOG(SSH_LOG_FUNCTIONS, "Responding to a global request");
+
+    if (msg->global_request.want_reply) {
+        int response = SSH2_MSG_REQUEST_FAILURE;
+        if (ok)
+            response = SSH2_MSG_REQUEST_SUCCESS;
+
+        if (buffer_add_u8(msg->session->out_buffer,
+                    response) < 0) {
+            goto error;
+        }
+        if (payload != NULL) {
+            if (ssh_buffer_add_data(msg->session->out_buffer,
+                    payload, len) < 0) {
+                goto error;
+            }
+        }
+        return packet_send(msg->session);
+    }
+    SSH_LOG(SSH_LOG_PACKET,
+            "The client doesn't want a reply!");
 
     return SSH_OK;
 error:
@@ -769,6 +828,25 @@ static int ssh_message_global_request_reply_default(ssh_message msg) {
     return SSH_OK;
 error:
     return SSH_ERROR;
+}
+
+int ssh_message_reply_custom(ssh_message msg, int ok, char* payload, size_t len) {
+  if (msg == NULL)
+    return -1;
+
+  switch (msg->type) {
+    case SSH_REQUEST_CHANNEL:
+      return ssh_message_channel_request_reply_custom(msg, ok);
+    case SSH_REQUEST_GLOBAL:
+      return ssh_message_global_request_reply_custom(msg, ok, payload, len);
+    default:
+      SSH_LOG(SSH_LOG_PACKET,
+          "Don't know how to custom reply to %d type",
+          msg->type);
+      break;
+  }
+
+  return -1;
 }
 
 int ssh_message_reply_default(ssh_message msg) {
@@ -977,7 +1055,7 @@ int ssh_auth_reply_success(ssh_session session, int partial) {
   if (partial) {
     return ssh_auth_reply_default(session, partial);
   }
-  
+
   session->session_state = SSH_SESSION_STATE_AUTHENTICATED;
   session->flags |= SSH_SESSION_FLAG_AUTHENTICATED;
 

@@ -1342,6 +1342,9 @@ SSH_PACKET_CALLBACK(ssh_packet_global_request){
         msg->global_request.type = SSH_GLOBAL_REQUEST_TCPIP_FORWARD;
         msg->global_request.want_reply = want_reply;
 
+        msg->global_request.request = request;
+        msg->global_request.payload = packet;
+
         SSH_LOG(SSH_LOG_PROTOCOL, "Received SSH_MSG_GLOBAL_REQUEST %s %d %s:%d", request, want_reply,
                 msg->global_request.bind_address,
                 msg->global_request.bind_port);
@@ -1364,6 +1367,9 @@ SSH_PACKET_CALLBACK(ssh_packet_global_request){
         msg->global_request.type = SSH_GLOBAL_REQUEST_CANCEL_TCPIP_FORWARD;
         msg->global_request.want_reply = want_reply;
 
+        msg->global_request.request = request;
+        msg->global_request.payload = packet;
+
         SSH_LOG(SSH_LOG_PROTOCOL, "Received SSH_MSG_GLOBAL_REQUEST %s %d %s:%d", request, want_reply,
                 msg->global_request.bind_address,
                 msg->global_request.bind_port);
@@ -1374,8 +1380,20 @@ SSH_PACKET_CALLBACK(ssh_packet_global_request){
             ssh_message_reply_default(msg);
         }
     } else {
-        SSH_LOG(SSH_LOG_PROTOCOL, "UNKNOWN SSH_MSG_GLOBAL_REQUEST %s %d", request, want_reply);
-        rc = SSH_PACKET_NOT_USED;
+        msg->global_request.type = SSH_GLOBAL_REQUEST_UNKNOWN;
+        msg->global_request.want_reply = want_reply;
+
+        msg->global_request.request = request;
+        msg->global_request.payload = packet;
+
+        SSH_LOG(SSH_LOG_PROTOCOL, "Received UNKNOWN SSH_MSG_GLOBAL_REQUEST %s %d", request, want_reply);
+
+        if(ssh_callbacks_exists(session->common.callbacks, global_request_function)) {
+            session->common.callbacks->global_request_function(session, msg, session->common.callbacks->userdata);
+        } else {
+            ssh_message_reply_default(msg);
+        }
+        //rc = SSH_PACKET_NOT_USED;
     }
 
     SAFE_FREE(msg);
